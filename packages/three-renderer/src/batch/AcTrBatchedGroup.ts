@@ -340,24 +340,38 @@ export class AcTrBatchedGroup extends THREE.Group {
 
   protected highlight(objectId: string, containerGroup: THREE.Group) {
     const entityInfo = this._entitiesMap.get(objectId)
-    // TODO:
-    // If there are more than 1000 batched object to highlight, just ignore it due to
-    // performance reason. We will fix it in the future.
-    if (entityInfo && entityInfo.length < 1000) {
-      entityInfo.forEach(item => {
-        const batchedObject = this.getObjectById(
-          item.batchedObjectId
-        ) as AcTrBatchedObject
-        const object = batchedObject.getObjectAt(item.batchId)
+    if (!entityInfo || entityInfo.length === 0) return
 
-        const clonedMaterial = AcTrMaterialUtil.cloneMaterial(object.material)
-        AcTrMaterialUtil.setMaterialColor(clonedMaterial)
-        object.material = clonedMaterial
+    const grouped = new Map<number, number[]>()
 
-        object.userData.objectId = objectId
-        containerGroup.add(object)
-      })
+    for (const { batchedObjectId, batchId } of entityInfo) {
+      let list = grouped.get(batchedObjectId)
+      if (!list) grouped.set(batchedObjectId, (list = []))
+      list.push(batchId)
     }
+
+    grouped.forEach((batchIds, batchedObjectId) => {
+      const batchedObject = this.getObjectById(
+        batchedObjectId
+      ) as AcTrBatchedObject
+
+      if (!batchedObject || !(batchedObject instanceof AcTrBatchedLine)) return
+
+      const geometry = batchedObject.extractGeometry(batchIds)
+
+      const material = AcTrMaterialUtil.cloneMaterial(
+        batchedObject.material as THREE.Material
+      )
+      AcTrMaterialUtil.setMaterialColor(material)
+
+      const obj =
+        batchedObject instanceof THREE.LineSegments
+          ? new THREE.LineSegments(geometry, material)
+          : new THREE.Mesh(geometry, material)
+
+      obj.userData.objectId = objectId
+      containerGroup.add(obj)
+    })
   }
 
   protected unhighlight(objectId: string, containerGroup: THREE.Group) {

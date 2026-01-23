@@ -7,7 +7,8 @@ import {
   AcTrBatchGeometryUserData,
   ascIdSort,
   copyArrayContents,
-  copyAttributeData
+  copyAttributeData,
+  copyAttributeRange
 } from './AcTrBatchedGeometryInfo'
 
 const _box = /*@__PURE__*/ new THREE.Box3()
@@ -702,6 +703,81 @@ export class AcTrBatchedLine extends THREE.LineSegments {
       geometryInfo.count
     )
     return object
+  }
+
+  extractGeometry(batchIds: readonly number[]) {
+    const src = this.geometry
+    const srcIndex = src.index
+
+    let totalVertexCount = 0
+    let totalIndexCount = 0
+
+    for (const id of batchIds) {
+      const info = this.getGeometryAt(id)
+      totalVertexCount += info.vertexCount
+      if (srcIndex) totalIndexCount += info.indexCount
+    }
+
+    const dstGeometry = new THREE.BufferGeometry()
+    for (const attributeName in src.attributes) {
+      const srcAttribute = src.getAttribute(attributeName)
+      const { array, itemSize, normalized } = srcAttribute
+
+      // @ts-expect-error no good way to remove this type error
+      const dstArray = new array.constructor(maxVertexCount * itemSize)
+      const dstAttribute = new THREE.BufferAttribute(
+        dstArray,
+        itemSize,
+        normalized
+      )
+      dstGeometry.setAttribute(attributeName, dstAttribute)
+    }
+
+    let dstIndex: THREE.BufferAttribute | null = null
+    if (srcIndex) {
+      const IndexArray = totalVertexCount > 65535 ? Uint32Array : Uint16Array
+      dstIndex = new THREE.BufferAttribute(new IndexArray(totalIndexCount), 1)
+      dstGeometry.setIndex(dstIndex)
+    }
+
+    let vOffset = 0
+    let iOffset = 0
+
+    for (const id of batchIds) {
+      const info = this.getGeometryAt(id)
+
+      // vertices
+      for (const name in src.attributes) {
+        const srcAttr = src.getAttribute(name)
+        const dstAttr = dstGeometry.getAttribute(name)
+
+        copyAttributeRange(
+          srcAttr,
+          dstAttr,
+          vOffset,
+          info.vertexStart,
+          info.vertexCount
+        )
+      }
+
+      // indices
+      if (srcIndex && dstIndex) {
+        for (let i = 0; i < info.indexCount; i++) {
+          dstIndex.setX(
+            iOffset + i,
+            srcIndex.getX(info.indexStart + i) - info.vertexStart + vOffset
+          )
+        }
+      }
+
+      vOffset += info.vertexCount
+      iOffset += info.indexCount
+    }
+
+    dstGeometry.computeBoundingBox()
+    dstGeometry.computeBoundingSphere()
+
+    return dstGeometry
   }
 
   private _initializeRaycastObject(raycastObject: THREE.LineSegments) {

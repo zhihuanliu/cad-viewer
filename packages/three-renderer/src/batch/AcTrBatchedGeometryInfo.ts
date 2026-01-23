@@ -65,6 +65,39 @@ export function copyAttributeData(
   target.needsUpdate = true
 }
 
+export function copyAttributeRange(
+  src: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+  target: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+  srcStart: number,
+  count: number,
+  targetOffset: number
+) {
+  const itemSize = src.itemSize
+
+  if (
+    (src as THREE.InterleavedBufferAttribute).isInterleavedBufferAttribute ||
+    src.array.constructor !== target.array.constructor
+  ) {
+    for (let i = 0; i < count; i++) {
+      for (let c = 0; c < itemSize; c++) {
+        target.setComponent(
+          targetOffset + i,
+          c,
+          src.getComponent(srcStart + i, c)
+        )
+      }
+    }
+  } else {
+    const srcArray = src.array.subarray(
+      srcStart * itemSize,
+      (srcStart + count) * itemSize
+    )
+    target.array.set(srcArray, targetOffset * itemSize)
+  }
+
+  target.needsUpdate = true
+}
+
 // safely copies array contents to a potentially smaller array
 export function copyArrayContents(
   src: THREE.TypedArray,
