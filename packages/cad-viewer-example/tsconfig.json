@@ -22,7 +22,14 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@mlightcad/cad-simple-viewer": ["../cad-simple-viewer/src"],
+      "@mlightcad/cad-viewer": ["../cad-viewer/src"],
+      "@mlightcad/svg-renderer": ["../svg-renderer/src"],
+      "@mlightcad/three-renderer": ["../three-renderer/src"]
+    }
   },
   "include": [
     "src/**/*.ts",
