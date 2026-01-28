@@ -24,6 +24,14 @@ export default {
     layer: {
       text: '图层',
       description: '管理图层'
+    },
+    annotation: {
+      text: '标注',
+      description: '在图纸上添加标注'
+    },
+    clearAnnotation: {
+      text: '清空标注',
+      description: '清空图纸上的所有标注'
     }
   },
   statusBar: {

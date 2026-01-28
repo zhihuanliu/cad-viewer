@@ -1,6 +1,6 @@
 import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
 import { AcTrEntity, AcTrTransientManager } from '@mlightcad/three-renderer'
-import { AcEdLayerInfo } from 'editor'
+import { AcEdLayerInfo } from '../editor'
 import * as THREE from 'three'
 
 import { AcTrLayer } from './AcTrLayer'

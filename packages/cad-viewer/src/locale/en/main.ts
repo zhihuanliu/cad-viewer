@@ -25,6 +25,14 @@ export default {
     layer: {
       text: 'Layer',
       description: 'Manages layers'
+    },
+    annotation: {
+      text: 'Annotation',
+      description: 'Add annotations to the drawing'
+    },
+    clearAnnotation: {
+      text: 'Clear Annotations',
+      description: 'Clear all annotations from the drawing'
     }
   },
   statusBar: {

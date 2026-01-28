@@ -87,7 +87,6 @@
           type="file"
           ref="fileInput"
           accept=".png,.jpg,.jpeg"
-          @change="handleFileChange"
           style="display: none"
         />
       </el-tab-pane>

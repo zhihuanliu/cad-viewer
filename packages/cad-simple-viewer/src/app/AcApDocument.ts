@@ -59,9 +59,14 @@ export class AcApDocument {
     try {
       await this._database.openUri(uri, options)
       this.docTitle = this._fileName
-    } catch (_) {
+    } catch (error) {
       isSuccess = false
-      eventBus.emit('failed-to-open-file', { fileName: uri })
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Failed to open file from URI:', uri, error)
+      eventBus.emit('failed-to-open-file', {
+        fileName: uri,
+        error: errorMessage
+      })
     }
     return isSuccess
   }
@@ -97,9 +102,14 @@ export class AcApDocument {
         fileExtension == 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
       )
       this.docTitle = this._fileName
-    } catch {
+    } catch (error) {
       isSuccess = false
-      eventBus.emit('failed-to-open-file', { fileName: fileName })
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Failed to open document:', fileName, error)
+      eventBus.emit('failed-to-open-file', {
+        fileName: fileName,
+        error: errorMessage
+      })
     }
     return isSuccess
   }

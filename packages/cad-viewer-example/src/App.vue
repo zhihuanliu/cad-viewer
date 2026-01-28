@@ -6,23 +6,24 @@
     </div>
 
     <!-- CAD viewer when file is selected -->
-    <div v-else>
+    <div v-else class="cad-viewer-container">
       <MlCadViewer
         locale="en"
         :local-file="store.selectedFile"
         @create="initialize"
         base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
+      <AnnotationTool />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 import { AcApDocManager, AcEdCommandStack } from '@mlightcad/cad-simple-viewer'
 import { MlCadViewer } from '@mlightcad/cad-viewer'
 
-import { AcApQuitCmd } from './commands'
+import { AcApAnnotationCmd, AcApQuitCmd } from './commands'
+import AnnotationTool from './components/AnnotationTool.vue'
 import FileUpload from './components/FileUpload.vue'
 import { initializeLocale } from './locale'
 import { store } from './store'
@@ -41,6 +42,12 @@ const initialize = () => {
     'exit',
     'exit',
     new AcApQuitCmd()
+  )
+  register.addCommand(
+    AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+    'annotation',
+    'annotation',
+    new AcApAnnotationCmd()
   )
 }
 
@@ -77,5 +84,11 @@ const handleFileSelect = (file: File) => {
   left: 0;
   z-index: 1000;
   pointer-events: auto; /* Allow clicks on upload screen */
+}
+
+.cad-viewer-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 </style>

@@ -189,17 +189,42 @@ const features = useSettings()
  * @param fileName - Name of the uploaded file
  * @param fileContent - File content as string (DXF) or ArrayBuffer (DWG)
  */
-const handleFileRead = async (fileName: string, fileContent: ArrayBuffer) => {
-  const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
-  const success = await AcApDocManager.instance.openDocument(
-    fileName,
-    fileContent,
-    options
-  )
-  if (!success) {
-    throw new Error('Failed to open file')
+const handleFileRead = async (
+  fileName: string,
+  fileContent: string | ArrayBuffer
+) => {
+  try {
+    // Convert string to ArrayBuffer if needed (for DXF files)
+    const content =
+      typeof fileContent === 'string'
+        ? new TextEncoder().encode(fileContent).buffer
+        : fileContent
+
+    const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
+    const success = await AcApDocManager.instance.openDocument(
+      fileName,
+      content as ArrayBuffer,
+      options
+    )
+    if (!success) {
+      throw new Error('Failed to open file')
+    }
+    store.fileName = AcApDocManager.instance.curDocument.docTitle
+  } catch (error) {
+    console.error('Error in handleFileRead:', fileName, error)
+    const errorMessage =
+      error instanceof Error ? error.message : String(error)
+    ElMessage({
+      message: `${t('main.message.failedToOpenFile', {
+        fileName: fileName
+      })}: ${errorMessage}`,
+      grouping: true,
+      type: 'error',
+      showClose: true,
+      duration: 0 // Keep error message visible until user closes it
+    })
+    throw error // Re-throw to allow caller to handle if needed
   }
-  store.fileName = AcApDocManager.instance.curDocument.docTitle
 }
 
 /**
@@ -259,12 +284,18 @@ const openLocalFile = async (file: File) => {
       throw new Error('Failed to open local file')
     }
     store.fileName = AcApDocManager.instance.curDocument.docTitle
-  } catch {
+  } catch (error) {
+    console.error('Error opening local file:', file.name, error)
+    const errorMessage =
+      error instanceof Error ? error.message : String(error)
     ElMessage({
-      message: t('main.message.failedToOpenFile', { fileName: file.name }),
+      message: `${t('main.message.failedToOpenFile', {
+        fileName: file.name
+      })}: ${errorMessage}`,
       grouping: true,
       type: 'error',
-      showClose: true
+      showClose: true,
+      duration: 0 // Keep error message visible until user closes it
     })
   }
 }
@@ -413,14 +444,15 @@ eventBus.on('failed-to-get-avaiable-fonts', params => {
 
 // Handle file opening failures with user-friendly error messages
 eventBus.on('failed-to-open-file', params => {
-  const message = t('main.message.failedToOpenFile', {
+  let message = t('main.message.failedToOpenFile', {
     fileName: params.fileName
   })
   ElMessage({
     message,
     grouping: true,
     type: 'error',
-    showClose: true
+    showClose: true,
+    duration: 0 // Keep error message visible until user closes it
   })
   error('File Opening Failed', message)
 })

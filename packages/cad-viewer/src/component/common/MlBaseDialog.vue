@@ -65,7 +65,7 @@ const emits = defineEmits([
   'opened'
 ])
 
-const computedIcon = computed<Component>(() => props.icon ?? mlightcad)
+const computedIcon = computed(() => props.icon ?? mlightcad)
 
 const widthStyle = computed(() =>
   typeof props.width === 'number' ? `${props.width}px` : props.width

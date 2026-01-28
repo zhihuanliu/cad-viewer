@@ -55,6 +55,8 @@ export type AcEdEvents = {
   'failed-to-open-file': {
     /** Name/path of the file that failed to open */
     fileName: string
+    /** Optional error message with details about the failure */
+    error?: string
   }
   /** Emitted when a required font is not found */
   'font-not-found': {
