@@ -86,7 +86,7 @@ import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
 import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
 import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { initializeCadViewer, store } from '../app'
@@ -102,6 +102,8 @@ import {
 import { MlNotificationCenter } from './notification'
 import { MlPaletteManager } from './palette'
 import { MlStatusBar } from './statusBar'
+
+import { DOC_MANAGER_INJECT_KEY } from './constants'
 
 const emit = defineEmits<{
   /**
@@ -135,6 +137,12 @@ interface Props {
   useMainThreadDraw?: boolean
   /** Initial theme of the viewer */
   theme?: 'light' | 'dark'
+  /**
+   * Optional AcApDocManager instance. If provided, this component will use the given instance
+   * instead of creating a new one. This enables multiple CAD viewers to coexist in the same page.
+   * If not provided, the default singleton instance will be used (backward compatible).
+   */
+  docManagerInstance?: AcApDocManager
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -144,7 +152,8 @@ const props = withDefaults(defineProps<Props>(), {
   background: undefined,
   baseUrl: undefined,
   useMainThreadDraw: false,
-  theme: 'dark'
+  theme: 'dark',
+  docManagerInstance: undefined
 })
 
 const { t } = useI18n()
@@ -160,8 +169,16 @@ const viewerRoot = ref<HTMLElement | null>(null)
 // Editor reference that gets updated after initialization
 const editorRef = ref<AcApDocManager | null>(null)
 
+// Computed property to get the docManager instance (either provided or default)
+const docManager = computed(() => {
+  return props.docManagerInstance || AcApDocManager.instance
+})
+
 // Computed property to ensure proper typing
 const editor = computed(() => editorRef.value as AcApDocManager)
+
+// Provide the docManager instance to child components
+provide(DOC_MANAGER_INJECT_KEY, docManager)
 
 // Notification center visibility
 const showNotificationCenter = ref(false)
@@ -201,7 +218,7 @@ const handleFileRead = async (
         : fileContent
 
     const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
-    const success = await AcApDocManager.instance.openDocument(
+    const success = await docManager.value.openDocument(
       fileName,
       content as ArrayBuffer,
       options
@@ -209,7 +226,7 @@ const handleFileRead = async (
     if (!success) {
       throw new Error('Failed to open file')
     }
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
+    store.fileName = docManager.value.curDocument.docTitle
   } catch (error) {
     console.error('Error in handleFileRead:', fileName, error)
     const errorMessage =
@@ -236,8 +253,8 @@ const handleFileRead = async (
 const openFileFromUrl = async (url: string) => {
   try {
     const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
-    await AcApDocManager.instance.openUrl(url, options)
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
+    await docManager.value.openUrl(url, options)
+    store.fileName = docManager.value.curDocument.docTitle
   } catch (error) {
     console.error('Failed to open file from URL:', error)
     ElMessage({
@@ -275,7 +292,7 @@ const openLocalFile = async (file: File) => {
 
     // Open the file using the document manager
     const options: AcDbOpenDatabaseOptions = { minimumChunkSize: 1000 }
-    const success = await AcApDocManager.instance.openDocument(
+    const success = await docManager.value.openDocument(
       file.name,
       fileContent,
       options
@@ -283,7 +300,7 @@ const openLocalFile = async (file: File) => {
     if (!success) {
       throw new Error('Failed to open local file')
     }
-    store.fileName = AcApDocManager.instance.curDocument.docTitle
+    store.fileName = docManager.value.curDocument.docTitle
   } catch (error) {
     console.error('Error opening local file:', file.name, error)
     const errorMessage =
@@ -327,7 +344,7 @@ watch(
   () => props.background,
   newBg => {
     if (newBg != null) {
-      AcApDocManager.instance.curView.backgroundColor = newBg
+      docManager.value.curView.backgroundColor = newBg
     }
   }
 )
@@ -342,16 +359,26 @@ watch(
 
 // Component lifecycle: Initialize and load initial file if URL or localFile is provided
 onMounted(async () => {
-  // Initialize the CAD viewer with the internal canvas
-  if (containerRef.value) {
-    initializeCadViewer({
-      container: containerRef.value,
-      baseUrl: props.baseUrl,
-      autoResize: true,
-      useMainThreadDraw: props.useMainThreadDraw
-    })
-    // Set the editor reference after initialization
-    editorRef.value = AcApDocManager.instance
+  // If a docManager instance is provided, use it; otherwise initialize a new one
+  if (props.docManagerInstance) {
+    // Use the provided instance
+    editorRef.value = props.docManagerInstance
+    // Register commands and dialogs for this instance
+    initializeCadViewer({}, props.docManagerInstance)
+  } else {
+    // Initialize the CAD viewer with the internal canvas (default singleton behavior)
+    if (containerRef.value) {
+      const manager = initializeCadViewer({
+        container: containerRef.value,
+        baseUrl: props.baseUrl,
+        autoResize: true,
+        useMainThreadDraw: props.useMainThreadDraw
+      })
+      // Set the editor reference after initialization
+      if (manager) {
+        editorRef.value = manager
+      }
+    }
   }
 
   // If URL prop is provided, automatically load the file on mount
@@ -365,7 +392,7 @@ onMounted(async () => {
 
   // Apply initial background color if provided
   if (props.background != null) {
-    AcApDocManager.instance.curView.backgroundColor = props.background
+    docManager.value.curView.backgroundColor = props.background
   }
 
   // Set initial theme from props
@@ -384,7 +411,13 @@ onUnmounted(() => {
   // Notify consumers first
   emit('destroy')
 
-  AcApDocManager.instance.destroy()
+  // Only destroy if we created the instance (not if it was provided)
+  // If an instance was provided, the parent component is responsible for cleanup
+  if (!props.docManagerInstance && editorRef.value) {
+    // Only destroy if this is the default instance and we're the last user
+    // For now, we'll be conservative and not destroy the default instance
+    // as it might be used elsewhere. The parent should manage instance lifecycle.
+  }
 })
 
 // Set up global event listeners for various CAD operations and notifications

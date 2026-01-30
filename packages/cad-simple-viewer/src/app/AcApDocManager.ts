@@ -148,6 +148,10 @@ export class AcApDocManager {
   private _commandManager: AcEdCommandStack
   /** Singleton instance */
   private static _instance?: AcApDocManager
+  /** All instances for multi-instance support */
+  private static _instances: Map<string, AcApDocManager> = new Map()
+  /** Default instance ID */
+  private static readonly DEFAULT_INSTANCE_ID = 'default'
 
   /** Events fired during document lifecycle */
   public readonly events = {
@@ -156,6 +160,9 @@ export class AcApDocManager {
     /** Fired when a document becomes active */
     documentActivated: new AcCmEventManager<AcDbDocumentEventArgs>()
   }
+  
+  /** Instance ID for this manager */
+  private _instanceId: string
 
   /**
    * Private constructor for singleton pattern.
@@ -166,7 +173,8 @@ export class AcApDocManager {
    * @param options -Options for creating AcApDocManager instance
    * @private
    */
-  private constructor(options: AcApDocManagerOptions = {}) {
+  private constructor(options: AcApDocManagerOptions = {}, instanceId: string = AcApDocManager.DEFAULT_INSTANCE_ID) {
+    this._instanceId = instanceId
     this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
     if (options.useMainThreadDraw) {
       AcTrMTextRenderer.getInstance().setRenderMode('main')
@@ -245,9 +253,74 @@ export class AcApDocManager {
    */
   static createInstance(options: AcApDocManagerOptions = {}) {
     if (AcApDocManager._instance == null) {
-      AcApDocManager._instance = new AcApDocManager(options)
+      AcApDocManager._instance = new AcApDocManager(options, AcApDocManager.DEFAULT_INSTANCE_ID)
+      AcApDocManager._instances.set(AcApDocManager.DEFAULT_INSTANCE_ID, AcApDocManager._instance)
     }
     return this._instance
+  }
+
+  /**
+   * Creates a new instance of AcApDocManager with a unique ID.
+   * 
+   * This allows multiple instances to coexist in the same application,
+   * enabling scenarios like displaying multiple CAD files simultaneously.
+   *
+   * @param options - Options for creating AcApDocManager instance
+   * @param instanceId - Optional unique identifier for this instance. If not provided, a UUID will be generated.
+   * @returns A new AcApDocManager instance
+   * 
+   * @example
+   * ```typescript
+   * // Create a new instance for a dialog viewer
+   * const dialogManager = AcApDocManager.createNewInstance({
+   *   container: dialogContainer,
+   *   autoResize: true
+   * }, 'dialog-viewer')
+   * ```
+   */
+  static createNewInstance(options: AcApDocManagerOptions = {}, instanceId?: string): AcApDocManager {
+    // Generate a unique ID if not provided
+    if (!instanceId) {
+      instanceId = `instance-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
+    }
+    
+    // Check if instance with this ID already exists
+    if (AcApDocManager._instances.has(instanceId)) {
+      console.warn(`Instance with ID "${instanceId}" already exists. Returning existing instance.`)
+      return AcApDocManager._instances.get(instanceId)!
+    }
+    
+    const newInstance = new AcApDocManager(options, instanceId)
+    AcApDocManager._instances.set(instanceId, newInstance)
+    return newInstance
+  }
+
+  /**
+   * Gets an instance by its ID.
+   *
+   * @param instanceId - The unique identifier of the instance
+   * @returns The instance if found, undefined otherwise
+   */
+  static getInstanceById(instanceId: string): AcApDocManager | undefined {
+    return AcApDocManager._instances.get(instanceId)
+  }
+
+  /**
+   * Gets all active instances.
+   *
+   * @returns A map of all active instances
+   */
+  static getAllInstances(): Map<string, AcApDocManager> {
+    return new Map(AcApDocManager._instances)
+  }
+
+  /**
+   * Gets the instance ID for this manager.
+   *
+   * @returns The instance ID
+   */
+  get instanceId(): string {
+    return this._instanceId
   }
 
   /**
@@ -259,16 +332,28 @@ export class AcApDocManager {
    */
   static get instance() {
     if (!AcApDocManager._instance) {
-      AcApDocManager._instance = new AcApDocManager()
+      AcApDocManager._instance = new AcApDocManager({}, AcApDocManager.DEFAULT_INSTANCE_ID)
+      AcApDocManager._instances.set(AcApDocManager.DEFAULT_INSTANCE_ID, AcApDocManager._instance)
     }
     return AcApDocManager._instance
   }
 
   /**
-   * Destroy the view
+   * Destroy the view and remove it from instances map
    */
   destroy() {
-    AcApDocManager._instance = undefined
+    // Remove from instances map
+    AcApDocManager._instances.delete(this._instanceId)
+    
+    // If this is the default instance, clear the singleton reference
+    if (this._instanceId === AcApDocManager.DEFAULT_INSTANCE_ID) {
+      AcApDocManager._instance = undefined
+    }
+    
+    // Clean up resources
+    if (this._progress) {
+      this._progress.hide()
+    }
   }
 
   /**
