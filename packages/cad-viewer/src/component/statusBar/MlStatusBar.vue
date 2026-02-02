@@ -90,6 +90,15 @@ const toggleNotificationCenter = () => {
   box-sizing: border-box;
 }
 
+/* Override position from @mlightcad/ui-components to be absolute instead of fixed */
+.ml-status-bar :deep(.ml-status-bar) {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+}
+
 .ml-status-bar-left-button-group {
   border: none;
   box-sizing: border-box;

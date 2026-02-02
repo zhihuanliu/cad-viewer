@@ -7,11 +7,11 @@ import { useI18n } from 'vue-i18n'
 import { useSettings } from '../../composable'
 import {
   annotation,
-  removeAll,
   layer,
-  move,
-  select,
   machine,
+  move,
+  removeAll,
+  select,
   zoomToBox,
   zoomToExtent
 } from '../../svg'
@@ -125,20 +125,23 @@ onUnmounted(() => {
 
 <template>
   <div v-if="features.isShowToolbar" class="ml-vertical-toolbar-container">
-    <ml-tool-bar
-      :items="verticalToolbarData"
-      size="small"
-      direction="vertical"
-      @click="handleCommand"
-    />
+    <ml-tool-bar :items="verticalToolbarData" size="small" direction="vertical" @click="handleCommand" />
   </div>
 </template>
 
 <style>
 .ml-vertical-toolbar-container {
-  position: fixed;
+  position: absolute;
   right: 30px;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 1000;
+  pointer-events: auto !important;
+  isolation: isolate;
+}
+
+/* 确保工具栏内部所有元素都可以交互 */
+.ml-vertical-toolbar-container * {
+  pointer-events: auto;
 }
 </style>

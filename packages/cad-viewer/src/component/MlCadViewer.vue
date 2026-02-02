@@ -1,13 +1,13 @@
 <!--
   MlCadViewer - Main CAD Viewer Component
-  
+
   This is the primary component for displaying and interacting with CAD files (DWG, DXF, etc.).
-  It provides a complete CAD viewing experience with file loading, layer management, 
+  It provides a complete CAD viewing experience with file loading, layer management,
   command execution, and various viewing tools.
-  
+
   USAGE EXAMPLE:
   MlCadViewer with locale="en", url="path/to/file.dwg"
-  
+
   FEATURES:
   - File loading from local files (drag & drop or file dialog) or remote URLs
   - Layer management and visibility control
@@ -18,7 +18,7 @@
   - Dark/light theme support
   - Status bar with progress and settings
   - Customizable base URL for fonts, templates, and example files
-  
+
   COMPONENTS INCLUDED:
   - Main menu and language selector
   - Toolbars with CAD commands
@@ -27,13 +27,13 @@
   - Status bar with various controls
   - File reader for local file uploads (supports drag & drop and file dialog)
   - Entity info panel for object details
-  
+
   EVENTS HANDLED:
   - File loading and error handling
   - Font loading notifications
   - General message display
   - File opening failures
-  
+
   DEPENDENCIES:
   - @mlightcad/cad-simple-viewer: Core CAD functionality
   - @mlightcad/data-model: File format support
@@ -84,7 +84,8 @@
 
 import { AcApDocManager, eventBus } from '@mlightcad/cad-simple-viewer'
 import { AcDbOpenDatabaseOptions } from '@mlightcad/data-model'
-import { useDark, useToggle } from '@vueuse/core'
+// import { useDark, useToggle } from '@vueuse/core'
+import { useDark } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -101,7 +102,7 @@ import {
 } from './layout'
 import { MlNotificationCenter } from './notification'
 import { MlPaletteManager } from './palette'
-import { MlStatusBar } from './statusBar'
+// import { MlStatusBar } from './statusBar'
 
 import { DOC_MANAGER_INJECT_KEY } from './constants'
 
@@ -190,7 +191,7 @@ const isDark = useDark({
   valueLight: 'ml-theme-light'
 })
 
-const toggleDark = useToggle(isDark)
+// const toggleDark = useToggle(isDark)
 
 const features = useSettings()
 
@@ -491,9 +492,9 @@ eventBus.on('failed-to-open-file', params => {
 })
 
 // Toggle notification center visibility
-const toggleNotificationCenter = () => {
-  showNotificationCenter.value = !showNotificationCenter.value
-}
+// const toggleNotificationCenter = () => {
+//   showNotificationCenter.value = !showNotificationCenter.value
+// }
 
 // Close notification center
 const closeNotificationCenter = () => {
@@ -533,8 +534,8 @@ const closeNotificationCenter = () => {
       </main>
 
       <!-- Footer section with command line and status information -->
-      <footer>
-        <!-- Status bar with progress, settings, and theme controls -->
+       <!-- TODO: 移除footer -->
+      <!-- <footer>
         <ml-status-bar
           :is-dark="isDark"
           :toggle-dark="toggleDark"
@@ -565,9 +566,7 @@ const closeNotificationCenter = () => {
   position: absolute;
   top: 0px;
   left: 0px;
-  height: calc(
-    100vh - var(--ml-status-bar-height)
-  ); /* Adjusts for menu and status bar */
+  height: 100%;
   width: 100%;
   display: block;
   outline: none;
@@ -578,9 +577,25 @@ const closeNotificationCenter = () => {
 /* Main CAD viewer container styling */
 .ml-cad-viewer-container {
   position: relative;
-  width: 100vw;
+  width: 100%;
+  height: 100%;
   z-index: 2;
+  pointer-events: none; /* Allow mouse events to pass through to canvas */
+}
+
+/* 启用交互元素的指针事件 */
+.ml-cad-viewer-container header,
+.ml-cad-viewer-container footer,
+.ml-cad-viewer-container main > *:not(.ml-file-name) {
   pointer-events: auto;
+}
+
+/* 确保工具栏在 Chrome 中可见和可交互 */
+.ml-cad-viewer-container main .ml-vertical-toolbar-container,
+.ml-cad-viewer-container main ml-tool-bars,
+.ml-cad-viewer-container main ml-tool-bars * {
+  pointer-events: auto !important;
+  z-index: 1000;
 }
 
 /* Position the filename display at the top center of the viewer */

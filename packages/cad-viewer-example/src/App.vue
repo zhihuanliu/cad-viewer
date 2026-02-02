@@ -10,9 +10,23 @@
       <MlCadViewer
         locale="en"
         :local-file="store.selectedFile"
+        base-url="/cad-data/"
         @create="initialize"
-        base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
       />
+      <!-- 
+      离线部署配置说明：
+      1. 将字体文件下载到 public/cad-data/fonts/ 目录
+      2. 设置 base-url="/cad-data/" 使用本地字体
+      3. 如果使用其他路径，请相应调整 base-url
+      
+      在线使用示例：
+      <MlCadViewer
+        locale="en"
+        :local-file="store.selectedFile"
+        base-url="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/"
+        @create="initialize"
+      />
+      -->
       <AnnotationTool />
     </div>
   </div>
@@ -88,7 +102,7 @@ const handleFileSelect = (file: File) => {
 
 .cad-viewer-container {
   position: relative;
-  width: 100%;
-  height: 100%;
+  width: 800px;
+  height: 600px;
 }
 </style>

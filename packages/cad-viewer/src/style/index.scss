@@ -5,6 +5,17 @@
   --ml-status-bar-height: 30px;
 }
 
+/* Global override for status bar positioning - ensure it's absolute instead of fixed */
+/* This targets the inner div rendered by @mlightcad/ui-components MlStatusBar */
+.ml-cad-viewer-container footer ml-status-bar .ml-status-bar,
+.ml-cad-viewer-container footer .ml-status-bar .ml-status-bar {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+}
+
 body {
   font-family: Inter, system-ui, Avenir, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", "微软雅黑", Arial, sans-serif;

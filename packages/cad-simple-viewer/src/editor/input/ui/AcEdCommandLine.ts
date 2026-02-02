@@ -404,7 +404,7 @@ export class AcEdCommandLine {
 
     this.wrapper = document.createElement('div')
     this.wrapper.className = 'ml-cli-wrapper'
-    this.cliContainer.appendChild(this.wrapper)
+    // this.cliContainer.appendChild(this.wrapper)
 
     this.bar = document.createElement('div')
     this.bar.className = 'ml-cli-bar'

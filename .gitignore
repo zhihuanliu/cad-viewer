@@ -9,6 +9,8 @@ tsconfig.tsbuildinfo
 
 # dependencies
 node_modules
+pnpm-store
+*.md
 
 # Vue
 components.d.ts
