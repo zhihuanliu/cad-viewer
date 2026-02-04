@@ -152,8 +152,22 @@ export class AcSvgEntity implements AcGiEntity {
   /**
    * @inheritdoc
    */
-  fastDeepClone() {
+  fastDeepClone(): AcGiEntity {
     // TODO: Implement it correctly
     return this
+  }
+
+  /**
+   * @inheritdoc
+   */
+  addChild(_child: AcGiEntity): void {
+    // SVG entities don't support children
+  }
+
+  /**
+   * @inheritdoc
+   */
+  bakeTransformToChildren(): void {
+    // SVG entities don't support children
   }
 }

@@ -611,7 +611,7 @@ export class AcTrView2d extends AcEdBaseView {
 
     for (let i = 0; i < entities.length; ++i) {
       const entity = entities[i]
-      const threeEntity = entity.worldDraw(this._renderer) as AcTrEntity
+      const threeEntity = entity.worldDraw(this._renderer) as unknown as AcTrEntity
       if (threeEntity) {
         threeEntity.objectId = entity.objectId
         threeEntity.ownerId = entity.ownerId
@@ -804,7 +804,7 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   private drawEntity(entity: AcDbEntity, delay?: boolean) {
-    return entity.worldDraw(this._renderer, delay) as AcTrEntity | null
+    return entity.worldDraw(this._renderer, delay) as unknown as AcTrEntity | null
   }
 
   // Define this in order to workaround libredwg bug.

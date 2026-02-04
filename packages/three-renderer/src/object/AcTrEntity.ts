@@ -272,11 +272,25 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   /**
    * @inheritdoc
    */
-  fastDeepClone() {
+  fastDeepClone(): AcGiEntity {
     const cloned = new AcTrEntity(this.styleManager)
     cloned.copy(this, false)
     this.copyGeometry(this, cloned)
     return cloned
+  }
+
+  /**
+   * @inheritdoc
+   */
+  addChild(_child: AcGiEntity): void {
+    // Three entities don't support children in this implementation
+  }
+
+  /**
+   * @inheritdoc
+   */
+  bakeTransformToChildren(): void {
+    // Three entities don't support children in this implementation
   }
 
   /**
